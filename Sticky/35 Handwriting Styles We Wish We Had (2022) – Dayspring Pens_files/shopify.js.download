@@ -1,0 +1,1 @@
+function init(){if(window.Edgemesh){window.edgemesh=new window.Edgemesh({scope:"/",swUrl:"https://"+document.location.hostname+"/apps/edgemesh/sw.js"})}else{setTimeout(init,100)}}init();

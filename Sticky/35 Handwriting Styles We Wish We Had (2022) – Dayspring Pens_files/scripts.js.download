@@ -1,0 +1,2 @@
+(function(){var r={};(function(){for(var e=0,t=document.getElementById("sections-script").getAttribute("data-sections").split(",");e<t.length;e++)r[t[e]]=!0})(),function(){if(!!r["vela-template-article"])try{(function(e,t,c){var n,o=e.getElementsByTagName(t)[0];e.getElementById(c)||(n=e.createElement(t),n.id=c,n.src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v2.12",o.parentNode.insertBefore(n,o))})(document,"script","facebook-jssdk")}catch(e){console.error(e)}}()})();
+//# sourceMappingURL=/s/files/1/0101/2750/7515/t/53/compiled_assets/scripts.js.map?89204=

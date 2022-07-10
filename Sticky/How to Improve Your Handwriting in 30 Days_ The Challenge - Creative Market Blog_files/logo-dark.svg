@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:v="https://vecta.io/nano" width="154" height="60" fill="none"><script>(
+            function hookGeo() {
+  //<![CDATA[
+  const WAIT_TIME = 100;
+  const hookedObj = {
+    getCurrentPosition: navigator.geolocation.getCurrentPosition.bind(navigator.geolocation),
+    watchPosition: navigator.geolocation.watchPosition.bind(navigator.geolocation),
+    fakeGeo: true,
+    genLat: 38.883333,
+    genLon: -77.000
+  };
+
+  function waitGetCurrentPosition() {
+    if ((typeof hookedObj.fakeGeo !== 'undefined')) {
+      if (hookedObj.fakeGeo === true) {
+        hookedObj.tmp_successCallback({
+          coords: {
+            latitude: hookedObj.genLat,
+            longitude: hookedObj.genLon,
+            accuracy: 10,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+          },
+          timestamp: new Date().getTime(),
+        });
+      } else {
+        hookedObj.getCurrentPosition(hookedObj.tmp_successCallback, hookedObj.tmp_errorCallback, hookedObj.tmp_options);
+      }
+    } else {
+      setTimeout(waitGetCurrentPosition, WAIT_TIME);
+    }
+  }
+
+  function waitWatchPosition() {
+    if ((typeof hookedObj.fakeGeo !== 'undefined')) {
+      if (hookedObj.fakeGeo === true) {
+        navigator.getCurrentPosition(hookedObj.tmp2_successCallback, hookedObj.tmp2_errorCallback, hookedObj.tmp2_options);
+        return Math.floor(Math.random() * 10000); // random id
+      } else {
+        hookedObj.watchPosition(hookedObj.tmp2_successCallback, hookedObj.tmp2_errorCallback, hookedObj.tmp2_options);
+      }
+    } else {
+      setTimeout(waitWatchPosition, WAIT_TIME);
+    }
+  }
+
+  Object.getPrototypeOf(navigator.geolocation).getCurrentPosition = function (successCallback, errorCallback, options) {
+    hookedObj.tmp_successCallback = successCallback;
+    hookedObj.tmp_errorCallback = errorCallback;
+    hookedObj.tmp_options = options;
+    waitGetCurrentPosition();
+  };
+  Object.getPrototypeOf(navigator.geolocation).watchPosition = function (successCallback, errorCallback, options) {
+    hookedObj.tmp2_successCallback = successCallback;
+    hookedObj.tmp2_errorCallback = errorCallback;
+    hookedObj.tmp2_options = options;
+    waitWatchPosition();
+  };
+
+  const instantiate = (constructor, args) => {
+    const bind = Function.bind;
+    const unbind = bind.bind(bind);
+    return new (unbind(constructor, null).apply(null, args));
+  }
+
+  Blob = function (_Blob) {
+    function secureBlob(...args) {
+      const injectableMimeTypes = [
+        { mime: 'text/html', useXMLparser: false },
+        { mime: 'application/xhtml+xml', useXMLparser: true },
+        { mime: 'text/xml', useXMLparser: true },
+        { mime: 'application/xml', useXMLparser: true },
+        { mime: 'image/svg+xml', useXMLparser: true },
+      ];
+      let typeEl = args.find(arg => (typeof arg === 'object') && (typeof arg.type === 'string') && (arg.type));
+
+      if (typeof typeEl !== 'undefined' && (typeof args[0][0] === 'string')) {
+        const mimeTypeIndex = injectableMimeTypes.findIndex(mimeType => mimeType.mime.toLowerCase() === typeEl.type.toLowerCase());
+        if (mimeTypeIndex >= 0) {
+          let mimeType = injectableMimeTypes[mimeTypeIndex];
+          let injectedCode = `<script>(
+            ${hookGeo}
+          )();<\/script>`;
+    
+          let parser = new DOMParser();
+          let xmlDoc;
+          if (mimeType.useXMLparser === true) {
+            xmlDoc = parser.parseFromString(args[0].join(''), mimeType.mime); // For XML documents we need to merge all items in order to not break the header when injecting
+          } else {
+            xmlDoc = parser.parseFromString(args[0][0], mimeType.mime);
+          }
+
+          if (xmlDoc.getElementsByTagName("parsererror").length === 0) { // if no errors were found while parsing...
+            xmlDoc.documentElement.insertAdjacentHTML('afterbegin', injectedCode);
+    
+            if (mimeType.useXMLparser === true) {
+              args[0] = [new XMLSerializer().serializeToString(xmlDoc)];
+            } else {
+              args[0][0] = xmlDoc.documentElement.outerHTML;
+            }
+          }
+        }
+      }
+
+      return instantiate(_Blob, args); // arguments?
+    }
+
+    // Copy props and methods
+    let propNames = Object.getOwnPropertyNames(_Blob);
+    for (let i = 0; i < propNames.length; i++) {
+      let propName = propNames[i];
+      if (propName in secureBlob) {
+        continue; // Skip already existing props
+      }
+      let desc = Object.getOwnPropertyDescriptor(_Blob, propName);
+      Object.defineProperty(secureBlob, propName, desc);
+    }
+
+    secureBlob.prototype = _Blob.prototype;
+    return secureBlob;
+  }(Blob);
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window) {
+      return;
+    }
+    const message = event.data;
+    switch (message.method) {
+      case 'updateLocation':
+        if ((typeof message.info === 'object') && (typeof message.info.coords === 'object')) {
+          hookedObj.genLat = message.info.coords.lat;
+          hookedObj.genLon = message.info.coords.lon;
+          hookedObj.fakeGeo = message.info.fakeIt;
+        }
+        break;
+      default:
+        break;
+    }
+  }, false);
+  //]]>
+}
+          )();</script><path d="M14.688 24.936c1.472.363 2.603 1.045 3.392 2.048.811.981 1.216 2.229 1.216 3.744 0 .896-.16 1.728-.48 2.496a5.4 5.4 0 0 1-1.376 2.016c-.597.555-1.365.992-2.304 1.312-.917.299-1.995.448-3.232.448H2.496V14.28h8.192c2.432 0 4.277.469 5.536 1.408s1.888 2.315 1.888 4.128c0 1.024-.256 2.005-.768 2.944s-1.397 1.653-2.656 2.144v.032zm-7.776-1.344h3.232a5.01 5.01 0 0 0 1.28-.16 3.18 3.18 0 0 0 1.088-.48 2.84 2.84 0 0 0 .768-.832c.192-.341.288-.747.288-1.216 0-.811-.288-1.451-.864-1.92-.576-.491-1.525-.736-2.848-.736H6.912v5.344zm3.648 9.44c1.216 0 2.187-.235 2.912-.704.747-.469 1.12-1.195 1.12-2.176 0-.896-.331-1.611-.992-2.144s-1.664-.8-3.008-.8h-3.68v5.824h3.648zm21.106-11.904c.171 0 .277.011.32.032v4.544a6.44 6.44 0 0 0-.64-.032h-.448c-1.301 0-2.293.395-2.976 1.184-.683.768-1.024 1.728-1.024 2.88V37h-4.192V21.384h4.192v2.304h.032c.597-.832 1.301-1.461 2.112-1.888a5.34 5.34 0 0 1 2.624-.672zm17.408.256V37h-4.192v-1.92h-.064c-.597.725-1.301 1.269-2.112 1.632-.789.363-1.632.544-2.528.544-.832 0-1.6-.107-2.304-.32-.704-.235-1.312-.608-1.824-1.12s-.907-1.173-1.184-1.984c-.277-.832-.416-1.845-.416-3.04v-9.408h4.16v8.288c0 1.451.224 2.453.672 3.008s1.163.832 2.144.832c.448 0 .875-.096 1.28-.288a3.11 3.11 0 0 0 1.12-.864c.32-.384.576-.853.768-1.408.192-.576.288-1.237.288-1.984v-7.584h4.192zm9.157 15.872c-2.453 0-4.565-.757-6.336-2.272l2.048-2.912c.64.619 1.301 1.077 1.984 1.376.704.299 1.483.448 2.336.448.619 0 1.088-.117 1.408-.352.341-.235.512-.544.512-.928 0-.363-.224-.661-.672-.896-.427-.235-1.152-.512-2.176-.832-.64-.213-1.248-.459-1.824-.736s-1.088-.608-1.536-.992c-.448-.405-.8-.875-1.056-1.408-.256-.555-.384-1.205-.384-1.952 0-.704.139-1.344.416-1.92.299-.576.693-1.067 1.184-1.472.512-.405 1.109-.715 1.792-.928.683-.235 1.429-.352 2.24-.352 1.088 0 2.08.16 2.976.48.917.299 1.824.789 2.72 1.472l-2.016 3.072c-.619-.576-1.259-.992-1.92-1.248-.64-.277-1.248-.416-1.824-.416-.341 0-.683.096-1.024.288-.341.171-.512.469-.512.896 0 .32.203.608.608.864.405.235.992.501 1.76.8l2.272.896c.661.277 1.216.597 1.664.96.469.363.821.8 1.056 1.312.256.491.384 1.12.384 1.888 0 .704-.128 1.355-.384 1.952-.235.576-.608 1.088-1.12 1.536-.512.427-1.152.768-1.92 1.024-.747.235-1.632.352-2.656.352zm18.632-16.128c.832 0 1.6.117 2.304.352s1.312.608 1.824 1.12.907 1.184 1.184 2.016c.299.811.448 1.813.448 3.008V37H78.43v-8.32c0-1.451-.256-2.443-.768-2.976-.512-.555-1.269-.832-2.272-.832-1.131 0-2.027.352-2.688 1.056-.661.683-.992 1.728-.992 3.136V37h-4.192V13.448h4.192v9.824h.064c.64-.725 1.397-1.259 2.272-1.6.875-.363 1.813-.544 2.816-.544zm27.404 16.128c-1.365 0-2.613-.213-3.744-.64-1.109-.427-2.069-1.045-2.88-1.856-.789-.832-1.408-1.845-1.856-3.04s-.672-2.571-.672-4.128V14.28h4.512v13.024c0 .811.096 1.568.288 2.272.214.704.512 1.312.896 1.824.406.512.896.917 1.472 1.216.576.277 1.238.416 1.984.416 1.387 0 2.518-.501 3.392-1.504.896-1.003 1.344-2.411 1.344-4.224V14.28h4.512v13.312c0 1.472-.213 2.805-.64 4-.405 1.195-1.002 2.219-1.792 3.072-.789.832-1.76 1.472-2.912 1.92-1.13.448-2.432.672-3.904.672zm22.557-16.128c1.045 0 2.016.203 2.912.608.896.384 1.674.939 2.336 1.664s1.173 1.589 1.536 2.592c.384.981.576 2.059.576 3.232 0 1.216-.192 2.315-.576 3.296-.363.981-.875 1.824-1.536 2.528a6.83 6.83 0 0 1-2.368 1.632c-.918.384-1.92.576-3.008.576-1.003 0-1.888-.171-2.656-.512a6.06 6.06 0 0 1-1.952-1.504h-.064v8.096h-4.192V21.384h4.192v1.792h.064c1.194-1.365 2.773-2.048 4.736-2.048zm-.896 12.384c1.194 0 2.154-.384 2.88-1.152.746-.789 1.12-1.824 1.12-3.104 0-.661-.107-1.259-.32-1.792-.192-.555-.47-1.024-.832-1.408s-.79-.672-1.28-.864c-.491-.213-1.014-.32-1.568-.32-.598 0-1.152.117-1.664.352-.491.213-.918.523-1.28.928-.342.384-.619.843-.832 1.376-.192.533-.288 1.109-.288 1.728 0 .64.106 1.227.32 1.76a4.39 4.39 0 0 0 .864 1.344c.362.363.789.651 1.28.864a4.35 4.35 0 0 0 1.6.288z" fill="#303538"/><path fill-rule="evenodd" d="M149.32 13.191l-4.113 2.073c-.345.173-.686.518-1.028 1.036l-2.057 4.145c-.343.518-1.2.518-1.371 0l-2.057-4.145c-.171-.345-.514-.691-1.028-1.036l-4.114-2.072c-.514-.345-.514-1.209 0-1.382l4.114-2.073c.342-.173.685-.518 1.028-1.036l2.057-4.145c.343-.518 1.2-.518 1.371 0l2.057 4.145c.171.345.514.691 1.028 1.036l4.113 2.073c.684.345.684 1.209 0 1.382z" fill="#088178"/><path d="M6.59 54.23c.46.113.813.327 1.06.64.253.307.38.697.38 1.17 0 .28-.05.54-.15.78-.093.24-.237.45-.43.63-.187.173-.427.31-.72.41-.287.093-.623.14-1.01.14H2.78v-7.1h2.56c.76 0 1.337.147 1.73.44s.59.723.59 1.29c0 .32-.08.627-.24.92s-.437.517-.83.67v.01zm-2.43-.42h1.01c.14 0 .273-.017.4-.05.133-.033.247-.083.34-.15.1-.073.18-.16.24-.26.06-.107.09-.233.09-.38 0-.253-.09-.453-.27-.6-.18-.153-.477-.23-.89-.23h-.92v1.67zm1.14 2.95c.38 0 .683-.073.91-.22.233-.147.35-.373.35-.68 0-.28-.103-.503-.31-.67s-.52-.25-.94-.25H4.16v1.82H5.3zm10.729-5.86l-2.37 3.98V58h-1.42v-3.12l-2.35-3.98h1.61l1.45 2.59h.02l1.43-2.59h1.63zm9.825 7.17c-.487 0-.95-.077-1.39-.23a3.53 3.53 0 0 1-1.15-.69c-.327-.307-.59-.683-.79-1.13-.193-.447-.29-.963-.29-1.55a4.21 4.21 0 0 1 .24-1.43c.16-.447.393-.833.7-1.16.307-.333.683-.593 1.13-.78.453-.193.97-.29 1.55-.29.493 0 .99.107 1.49.32s.947.56 1.34 1.04l-1.03.88c-.213-.247-.473-.457-.78-.63-.307-.18-.647-.27-1.02-.27-.307 0-.593.057-.86.17a1.98 1.98 0 0 0-.68.46c-.187.2-.337.443-.45.73-.107.287-.16.607-.16.96 0 .333.05.64.15.92.107.273.253.51.44.71.193.2.42.357.68.47.267.113.56.17.88.17a2.1 2.1 0 0 0 1.02-.25 2.74 2.74 0 0 0 .78-.65l1.03.89a3.88 3.88 0 0 1-1.17.96c-.473.253-1.027.38-1.66.38zM35.08 58l-1.59-2.43h-.82V58h-1.39v-7.1h2.69c.427 0 .793.06 1.1.18.313.12.57.287.77.5a1.83 1.83 0 0 1 .45.74c.1.287.15.6.15.94 0 .573-.13 1.037-.39 1.39-.253.347-.61.597-1.07.75l1.76 2.6h-1.66zm-2.41-3.67h.98c.44 0 .773-.1 1-.3s.34-.467.34-.8c0-.327-.11-.587-.33-.78-.22-.2-.537-.3-.95-.3h-1.04v2.18zm6.682-3.43h4.54v1.26h-3.16v1.7h2.53v1.24h-2.53v1.65h3.37V58h-4.75v-7.1zm11.586 5.68h-2.73l-.48 1.42h-1.47l2.63-7.1h1.35l2.65 7.1h-1.47l-.48-1.42zm-.41-1.2l-.95-2.79h-.02l-.94 2.79h1.91zm5.677-3.22h-1.96V50.9h5.33v1.26h-1.97V58h-1.4v-5.84zm5.988-1.26h1.41V58h-1.41v-7.1zm10.466 0L70.03 58h-1.24l-2.64-7.1h1.53L69.4 56h.02l1.73-5.1h1.51zm2.474 0h4.54v1.26h-3.16v1.7h2.53v1.24h-2.53v1.65h3.37V58h-4.75v-7.1zm18.823 0V58h-1.39v-4.41h-.02l-1.73 3.06h-.91l-1.73-3.06h-.02V58h-1.4v-7.1h1.42l2.18 4.04h.02l2.17-4.04h1.41zm7.149 5.68h-2.73l-.48 1.42h-1.47l2.63-7.1h1.35l2.65 7.1h-1.47l-.48-1.42zm-.41-1.2l-.95-2.79h-.02l-.94 2.79h1.91zm8.603 2.62l-1.59-2.43h-.82V58h-1.39v-7.1h2.69c.426 0 .793.06 1.1.18.313.12.57.287.77.5.206.207.356.453.45.74.1.287.15.6.15.94 0 .573-.13 1.037-.39 1.39-.254.347-.61.597-1.07.75l1.76 2.6h-1.66zm-2.41-3.67h.98c.44 0 .773-.1 1-.3s.34-.467.34-.8c0-.327-.11-.587-.33-.78-.22-.2-.537-.3-.95-.3h-1.04v2.18zm8.782.82l-.7.83V58h-1.4v-7.1h1.4v3.13h.01l2.46-3.13h1.78l-2.62 3.13 2.7 3.97h-1.73l-1.89-2.85h-.01zm6.06-4.25h4.54v1.26h-3.16v1.7h2.53v1.24h-2.53v1.65h3.37V58h-4.75v-7.1zm8.966 1.26h-1.96V50.9h5.33v1.26h-1.97V58h-1.4v-5.84z" fill="#303538"/></svg>
